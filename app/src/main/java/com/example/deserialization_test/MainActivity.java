@@ -112,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
         leftWheelInfo = findViewById(R.id.leftWheelInfo);
         rightWheelInfo = findViewById(R.id.rightWheelInfo);
 
-        setupPlot(tangentForcePlot, "Tangent Force (N)", 0, 70, true);
+        setupPlot(tangentForcePlot, "Tangent Force (N)", 0, 70, false);
         setupPlot(efficiencyPlot, "Efficiency (%)", 0, 100, false);
         setupPlot(pushArcPlot, "Push Arc (Degrees)", 0, 180, false);
 
@@ -250,26 +250,20 @@ public class MainActivity extends AppCompatActivity {
         return data;
     }
 
-    private Number[] convertRadToDeg(Number[] data) {
-        Number[] dataInDegrees = data.clone();
-        dataInDegrees[2] = Math.toDegrees(data[2].doubleValue());
-        dataInDegrees[7] = Math.toDegrees(data[7].doubleValue());
-        return dataInDegrees;
-    }
     private void updateViews(Number[] data) {
         Log.d(TAG, "Updating views with data: " + Arrays.toString(data));
         runOnUiThread(() -> {
             synchronized (dataQueue) {
-                Number[] dataInDegrees = convertRadToDeg(data);
-                updateSeries(currentSeries1TangentForce, series1TangentForce, data[1].floatValue(), tangentForcePlot);
-                updateSeries(currentSeries2TangentForce, series2TangentForce, data[6].floatValue(), tangentForcePlot);
-                updateSeries(currentSeries1Efficiency, series1Efficiency, data[4].floatValue(), efficiencyPlot);
-                updateSeries(currentSeries2Efficiency, series2Efficiency, data[9].floatValue(), efficiencyPlot);
-                updateSeries(currentSeries1PushArc, series1PushArc, dataInDegrees[2].floatValue(), pushArcPlot);
-                updateSeries(currentSeries2PushArc, series2PushArc, dataInDegrees[7].floatValue(), pushArcPlot);
+                updateSeries(currentSeries1TangentForce, series1TangentForce, data[1].floatValue(), tangentForcePlot, false);
+                updateSeries(currentSeries2TangentForce, series2TangentForce, data[6].floatValue(), tangentForcePlot, false);
+                updateSeries(currentSeries1Efficiency, series1Efficiency, data[4].floatValue(), efficiencyPlot, true);
+                updateSeries(currentSeries2Efficiency, series2Efficiency, data[9].floatValue(), efficiencyPlot, true);
+                updateSeries(currentSeries1PushArc, series1PushArc, data[2].floatValue(), pushArcPlot, false);
+                updateSeries(currentSeries2PushArc, series2PushArc, data[7].floatValue(), pushArcPlot, false);
+
                 // Update TextViews with speed and power information
-                String leftWheelText = String.format("Left Wheel: Speed %.2f m/s, Power %.2f W", data[0], data[3]);
-                String rightWheelText = String.format("Right Wheel: Speed %.2f m/s, Power %.2f W", data[5], data[8]);
+                String leftWheelText = String.format("Left Wheel: Speed %.2f m/s, Power %.2f W", Math.abs(data[0].doubleValue()), Math.abs(data[3].doubleValue()));
+                String rightWheelText = String.format("Right Wheel: Speed %.2f m/s, Power %.2f W", Math.abs(data[5].doubleValue()), Math.abs(data[8].doubleValue()));
 
                 leftWheelInfo.setText(leftWheelText);
                 rightWheelInfo.setText(rightWheelText);
@@ -277,12 +271,19 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void updateSeries(LinkedList<Number> currentSeries, SimpleXYSeries series, Number newValue, XYPlot plot) {
+
+
+    private void updateSeries(LinkedList<Number> currentSeries, SimpleXYSeries series, Number newValue, XYPlot plot, boolean isEfficiency) {
         currentSeries.removeFirst();
-        currentSeries.addLast(newValue);
+        if (isEfficiency) {
+            currentSeries.addLast(newValue.doubleValue() * 100);
+        } else {
+            currentSeries.addLast(newValue);
+        }
         series.setModel(currentSeries, SimpleXYSeries.ArrayFormat.Y_VALS_ONLY);
         plot.redraw();
     }
+
 
     // BLE Connection
 
